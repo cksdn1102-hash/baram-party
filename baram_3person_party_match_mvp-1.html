@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>바클 3인 파티 매칭</title>
+<style>
+:root{--bg:#101522;--panel:#1a2234;--line:#303b52;--text:#f4f6fb;--muted:#aab4c8;--accent:#f1c66d;--blue:#80b7ff;--green:#8fe0b1;--red:#ff9b9b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#121a2c,#0b0f18);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+main{max-width:650px;margin:auto;padding:18px 14px 42px}
+header{padding:16px 4px 20px}h1{font-size:25px;line-height:1.25;margin:0 0 8px}p{color:var(--muted);line-height:1.5;margin:6px 0}
+.tag{display:inline-block;border:1px solid #685a36;background:#342b19;color:var(--accent);padding:5px 9px;border-radius:999px;font-size:12px;margin-bottom:12px}
+.card{background:rgba(26,34,52,.96);border:1px solid var(--line);border-radius:17px;padding:16px;margin:12px 0}
+h2{font-size:17px;margin:0 0 12px}.field{margin:11px 0}label{display:block;color:var(--muted);font-size:13px;margin-bottom:7px}
+input,select,button{font:inherit}input,select{width:100%;padding:13px;border-radius:11px;border:1px solid var(--line);background:#101625;color:var(--text);outline:none}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.role{border:1px solid var(--line);border-radius:12px;padding:12px 4px;text-align:center;background:#111827;cursor:pointer}.role input{width:auto;accent-color:var(--accent)}.role strong{display:block;font-size:16px;margin-top:4px}.role small{color:var(--muted);font-size:11px}
+button{border:0;border-radius:11px;padding:13px 14px;cursor:pointer;font-weight:750}.primary{width:100%;background:var(--accent);color:#211a0c;margin-top:8px}.secondary{background:#27334a;color:var(--text);border:1px solid var(--line)}.danger{background:#3a2028;color:#ffc0c0;border:1px solid #653541}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}
+.status{border-radius:11px;padding:11px 12px;background:#111827;color:var(--muted);font-size:13px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{padding:12px 8px;background:#111827;border:1px solid var(--line);border-radius:12px;text-align:center}.num{font-size:23px;font-weight:800}.stat span{font-size:12px;color:var(--muted)}
+.person{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2b3549;gap:8px}.person:last-child{border-bottom:0}.rolepill{font-size:12px;padding:4px 8px;border-radius:999px;background:#293750;color:var(--blue);white-space:nowrap}.rolepill.현선{color:var(--green)}.rolepill.독혼{color:#d9b4ff}
+.party{border:1px solid #655634;background:#262519;border-radius:13px;padding:12px;margin:9px 0}.partytitle{font-weight:800;color:var(--accent);margin-bottom:7px}.empty{color:var(--muted);font-size:13px;padding:8px 0}
+footer{color:#77839a;font-size:12px;text-align:center;padding:18px 6px}
+</style>
+</head>
+<body><main>
+<header>
+<div class="tag">바람의나라 클래식 · 모바일 MVP</div>
+<h1>⚔️ 3인 파티 자동 매칭</h1>
+<p>격선 1명 + 현선 1명 + 독혼 1명. 세 직업이 모두 대기하면 선착순으로 파티를 만듭니다.</p>
+</header>
+<section class="card">
+<h2>1. 파티 신청</h2>
+<div class="field"><label for="nickname">게임 닉네임 (필수 · 중복 등록 불가)</label><input id="nickname" maxlength="20" placeholder="예: 심 봣 다" autocomplete="nickname"></div>
+<div class="field"><label>직업 선택</label><div class="roles">
+<label class="role"><input type="radio" name="role" value="격선" checked><strong>⚔️ 격선</strong><small>1명 필요</small></label>
+<label class="role"><input type="radio" name="role" value="현선"><strong>🛡️ 현선</strong><small>1명 필요</small></label>
+<label class="role"><input type="radio" name="role" value="독혼"><strong>🔮 독혼</strong><small>1명 필요</small></label>
+</div></div>
+<button class="primary" id="join">대기열 등록 / 자동 매칭</button>
+<div id="notice" class="status" style="margin-top:12px">닉네임과 직업을 선택한 뒤 등록하세요.</div>
+</section>
+<section class="card">
+<h2>2. 현재 대기 현황</h2>
+<div class="grid">
+<div class="stat"><div class="num" id="n-격선">0</div><span>격선 대기</span></div>
+<div class="stat"><div class="num" id="n-현선">0</div><span>현선 대기</span></div>
+<div class="stat"><div class="num" id="n-독혼">0</div><span>독혼 대기</span></div>
+</div>
+<div id="queue" style="margin-top:12px"></div>
+<div class="actions" style="margin-top:12px"><button class="secondary" id="cancel">내 신청 취소</button><button class="secondary" id="refresh">현황 새로고침</button></div>
+</section>
+<section class="card">
+<h2>3. 완성된 파티</h2>
+<div id="parties"></div>
+<div class="actions"><button class="secondary" id="copy">파티 결과 복사</button><button class="danger" id="reset">전체 초기화</button></div>
+</section>
+<div class="status"><strong>테스트 버전 안내</strong><br>이 파일은 현재 휴대폰 브라우저 안에만 신청 정보를 저장합니다. 여러 사람이 각자 휴대폰에서 함께 쓰는 공유형 서비스가 아닙니다. 실제 오픈톡 운영용으로 배포하려면 공용 온라인 DB와 웹 주소 연결이 필요합니다.</div>
+<footer>오픈톡에는 이 매칭 페이지 링크를 공지로 고정해 사용하세요.</footer>
+</main>
+<script>
+const KEY='baram_party_match_mvp_v1';
+const roles=['격선','현선','독혼'];
+let state={queue:[],parties:[],nextId:1};
+const $=id=>document.getElementById(id);
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.queue)&&Array.isArray(s.parties))state=s;}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));render();}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function say(t){$('notice').textContent=t;}
+function match(){
+ let made=0;
+ while(roles.every(r=>state.queue.some(p=>p.role===r))){
+   const members=roles.map(r=>state.queue.find(p=>p.role===r));
+   const ids=new Set(members.map(p=>p.id));
+   state.queue=state.queue.filter(p=>!ids.has(p.id));
+   state.parties.unshift({no:state.nextId++,time:new Date().toLocaleString('ko-KR'),members});
+   made++;
+ }
+ return made;
+}
+function render(){
+ for(const r of roles)$('n-'+r).textContent=state.queue.filter(p=>p.role===r).length;
+ $('queue').innerHTML=state.queue.length?state.queue.map((p,i)=>`<div class="person"><span>${i+1}. ${esc(p.name)}</span><span class="rolepill ${p.role}">${p.role}</span></div>`).join(''):'<div class="empty">아직 대기 중인 신청자가 없습니다.</div>';
+ $('parties').innerHTML=state.parties.length?state.parties.map(p=>`<div class="party"><div class="partytitle">파티 #${p.no} <span style="font-size:11px;color:#b7ad8d;font-weight:400">${esc(p.time)}</span></div>${p.members.map(m=>`<div class="person"><span>${esc(m.name)}</span><span class="rolepill ${m.role}">${m.role}</span></div>`).join('')}</div>`).join(''):'<div class="empty">아직 완성된 파티가 없습니다.</div>';
+}
+$('join').onclick=()=>{
+ const name=$('nickname').value.trim();const role=document.querySelector('input[name="role"]:checked').value;
+ if(!name){say('게임 닉네임을 입력해 주세요.');return;}
+ if(state.queue.some(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase())||state.parties.some(p=>p.members.some(m=>m.name.toLocaleLowerCase()===name.toLocaleLowerCase()))){say('이미 대기 중이거나 파티가 완성된 닉네임입니다. 한 사람당 한 번만 등록할 수 있어요.');return;}
+ const entry={id:Date.now()+Math.random(),name,role,joinedAt:Date.now()};
+ state.queue.push(entry);
+ const made=match();save();
+ say(made?`등록 완료! ${made}개 파티가 자동으로 완성됐어요.`:`${role}로 대기 등록 완료. 다른 직업의 신청자를 기다립니다.`);
+};
+$('cancel').onclick=()=>{
+ const name=$('nickname').value.trim();if(!name){say('취소할 때는 등록했던 게임 닉네임을 입력해 주세요.');return;}
+ const before=state.queue.length;state.queue=state.queue.filter(p=>p.name.toLocaleLowerCase()!==name.toLocaleLowerCase());
+ if(before===state.queue.length)say('대기열에서 해당 닉네임을 찾지 못했어요. 이미 파티가 완성됐다면 운영자에게 문의하세요.');
+ else{save();say('대기 신청을 취소했어요.');}
+};
+$('refresh').onclick=()=>{render();say('현재 저장된 현황을 새로 표시했어요.');};
+$('copy').onclick=async()=>{
+ const text=state.parties.map(p=>`[파티 #${p.no}]\\n`+p.members.map(m=>`${m.role}: ${m.name}`).join('\\n')).join('\\n\\n');
+ if(!text){say('복사할 파티 결과가 없습니다.');return;}
+ try{await navigator.clipboard.writeText(text);say('파티 결과를 복사했어요.');}catch(e){const w=window.open('','_blank');if(w){w.document.write('<pre>'+esc(text)+'</pre>');say('복사가 막혀 결과를 새 창에 표시했어요. 길게 눌러 복사하세요.');}else say(text);}
+};
+$('reset').onclick=()=>{if(confirm('이 휴대폰에 저장된 대기자와 파티 기록을 모두 지울까요?')){state={queue:[],parties:[],nextId:1};save();say('이 기기의 기록을 초기화했어요.');}};
+load();render();
+</script></body></html>
